@@ -1,0 +1,44 @@
+#!/usr/bin/R
+library(tidyverse)
+library(openxlsx);
+library(vegan);
+library(DT);
+library(formattable);
+library(kableExtra);
+library(plotly);
+
+setwd("C:/WORKS/DivPro/reporthtml");
+mainsummary <-  read.csv("secondary_analysis/overall_summary.tsv", sep="\t");
+dada2       <-  read.csv("secondary_analysis/dada2/DADA2_table.tsv", sep="\t");
+#dadaqcR1    <-  "secondary_analysis/dada2/QC/1_ggsave_1.md.err.png";
+#dadaqcR2    <-  "secondary_analysis/dada2/QC/1_ggsave_1.md.err.png";
+blast       <-  openxlsx::read.xlsx("secondary_analysis/Results/blast/megablast.xlsx", colNames = FALSE);
+blastheader <- c("ASV_ID", "subject_gi", "evalue", "bit_score", "score", "alignment_length", "identity_pcnt", "identical", "positives", "positives_pcnt", "subject_sci_names", "subject_com_names", "subject_blast_names", "subject_super_kingdoms", "subject_title", "sequence");
+names(blast) <- blastheader;
+DF <- merge(dada2, blast[ ,-16], by="ASV_ID" )
+
+dada <- dada2[,-c(1,ncol(dada2))]; 
+row.names(dada) <- dada2$ASV_ID;
+
+## alphadiversity {vegan}
+alphashannon  <- diversity(t(dada), index="shannon");
+
+## betadiver {vegan}
+betdiv     <- betadiver(t(dada));
+betasmeana <- rowMeans(as.matrix(betdiv$a));
+betasmeanb <- rowMeans(as.matrix(betdiv$b));
+betasmeanc <- rowMeans(as.matrix(betdiv$c));
+combined_data <- data.frame(t(rbind(betasmeana, betasmeanb, betasmeanc)));
+colnames(combined_data) <- c("a","b","c");
+
+
+## unique ASV
+uniqasv  <- colSums(dada != 0)
+totalasv <- colSums(dada)
+
+divtable <- data.frame(t(rbind(alphashannon, betasmeanc, uniqasv, totalasv))); 
+divtable$alphashannon <- round(divtable$alphashannon, 1);
+divtable$betasmeanc   <- round(divtable$betasmeanc,   1);
+
+
+rmarkdown::render("divpro_2_html.rmd", output_file = "divpro_batchreport.html");

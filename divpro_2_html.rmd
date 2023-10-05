@@ -1,0 +1,270 @@
+
+---
+title: '`r paste("![AGRF::DivPro](agrflogo.png){width=20%}<br>Diversity profile batch summary.")`'
+date: '`r paste("Created on: ", Sys.Date())`'
+output: html_document
+fontsize: 8pt
+---
+
+```{r TABLEPREPS,  echo=FALSE,error=TRUE,message=FALSE,warning=FALSE}
+mydotsize = 12;
+
+# Create an interactive ternary plot ( The triancle plot )
+# reusable function for creating annotation object
+label <- function(txt) {
+  list(
+    text = txt, 
+    x = 0.1, y = 1,
+    ax = 0, ay = 0,
+    xref = "paper", yref = "paper", 
+    align = "center",
+    font = list(family = "serif", size = 15, color = "white"),
+    bgcolor = "#b3b3b3", bordercolor = "black", borderwidth = 2
+  )
+}
+# reusable function for axis formatting
+axis <- function(txt) {
+  list(
+    title = txt, tickformat = ".0%", tickfont = list(size = 10)
+  )
+}
+
+ternaryAxes <- list(
+  aaxis = axis("a"), 
+  baxis = axis("b"), 
+  caxis = axis("c")
+)
+
+color_scale   <- scales::brewer_pal(palette = "Set1")(nrow(combined_data))
+color_mapping <- setNames(color_scale, rownames(combined_data))
+
+triplot <- plot_ly(
+  data = combined_data,
+  type = "scatterternary",
+  mode = "markers", 
+  a = ~a,
+  b = ~b,
+  c = ~c,
+  text = ~rownames(combined_data),
+  marker = list(
+    size = mydotsize
+  ),
+  color = ~rownames(combined_data),  # Use marker.color to specify the colors
+  colors = color_mapping             # Specify the color mapping
+) %>%
+  layout(
+#    annotations = label("beta diversity indexes (a,b,c)"),
+    ternary = ternaryAxes
+  )
+
+
+
+#TBL1 <- datatable(divtable, 
+#           colnames = c('alpha div Shannons', 'beta div mean c', 'ASV detected', 'total reads'),
+#           caption = 'Table 1: Sample diversity summaries.');
+
+colnames(divtable) <- c('alpha div Shannons', 'beta c', 'ASV detected', 'passed reads')
+TBL1 <- divtable %>%
+  mutate(
+    `alpha div Shannons` = color_tile("white", "orange")(`alpha div Shannons`),
+    `passed reads` = ifelse(`passed reads` < 1000,
+                           cell_spec(`passed reads`, color = "red", bold = T, italic = T),
+                           cell_spec(`passed reads`, color = "navy", bold = T, )),
+    `ASV detected` = color_bar("skyblue")(`ASV detected`)
+  ) %>%
+  kable(escape = F, caption = "Table 1: Sample diversity summaries.") %>%
+  kable_styling(c("striped", "hover"), full_width = F, font_size = 14)
+	   
+
+
+
+TBL2 <- datatable(mainsummary,
+           caption = 'Table 2: Sequencing and processing summary.',
+	   colnames = gsub("_", " ", colnames(mainsummary)),
+           extensions = 'Buttons',
+           options = list(autoWidth = FALSE,
+              lengthMenu = c(10, 25, 50, 100),
+              scrollY = T, 
+              scrollX = T,
+              columnDefs = list(list(visible=FALSE, targets=c(3,5:8,11,12,15))),
+	      paging = TRUE,
+	      searching = TRUE,
+	      fixedColumns = TRUE,
+	      ordering = TRUE,
+	      dom = 'Blfrtip',
+	      buttons = c('colvis', 'copy', 'csv', 'excel')));
+
+
+
+TBL3 <- datatable(DF, 
+           filter = 'top',
+           caption = 'Table 3: ASV and BLAST summary.',
+           extensions = 'Buttons',
+           options = list(autoWidth = FALSE,
+           lengthMenu = c(10, 50, 100, 1000),
+# 		      scrollY = '1000px',
+                      scrollY = T, 
+                      scrollX = T,
+                      columnDefs = list(list(visible=FALSE, targets=c(1,(nrow(mainsummary)+2):ncol(DF)))),
+	    	        paging = TRUE,
+		        searching = TRUE,
+		        fixedColumns = TRUE,
+		        ordering = TRUE,
+		        dom = 'Blfrtip',
+		        buttons = c('colvis', 'copy', 'csv', 'excel')));
+
+
+### umap on mainsummary the table2
+library(umap)
+# Remove non-numeric characters and convert to numeric
+mainsummary$cutadapt_total_processed <- as.numeric(gsub(",", "", mainsummary$cutadapt_total_processed))
+mainsummary$cutadapt_passing_filters <- as.numeric(mainsummary$cutadapt_passing_filters)
+mainsummary$cutadapt_passing_filters_percent <- as.numeric(gsub("%", "", mainsummary$cutadapt_passing_filters_percent))
+umap_data   <- mainsummary[, c("cutadapt_total_processed",
+#                               "cutadapt_passing_filters", 
+							   "raw",
+							   "cutadapt",
+							   "denoisedF",
+							   "denoisedR",
+							   "merged",
+							   "nonchimera")];
+## Some issue with small sample numbers override with altering setting
+if(nrow(umap_data)<3){
+	umap_plot <- "No umap for two samples or less is possible to make";
+}else{
+    n_neighbors <- ifelse(nrow(umap_data) < 10, 2, 10);
+}
+umap_result <- umap(umap_data,
+                   n_neighbors = n_neighbors,
+                   random_seed = 1234);
+map_df     <- as.data.frame(umap_result$layout);
+rownames(map_df) <- mainsummary$sample
+
+umap_plot <- plot_ly(data = map_df, x = ~V1, y = ~V2,
+                     text = ~rownames(map_df), 
+					 hoverinfo = "text",
+                     mode = "markers",
+                     marker = list(size = mydotsize));
+
+umap_plot <- umap_plot %>%
+  layout(
+    title =  "UMAP Plot for QC table",
+    xaxis = list(title = "UMAP Dimension 1"),
+    yaxis = list(title = "UMAP Dimension 2"),
+    hovermode = "closest"
+  )
+
+
+```
+
+### {.tabset}
+
+
+#### Diversity 
+
+
+<div style="display: flex; justify-content: space-between;">
+<div style="flex-basis: 50;">
+
+```{r  tab1, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+
+TBL1
+
+```
+
+</div>
+<div style="flex-basis: 48%;">
+
+
+```{r  triangle, fig.width=5, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+
+###### plain flat picture 
+# plot(betdiv, cex=3, pch=19, col="blue")
+
+###### otherwise plotly figure
+triplot
+
+
+```
+</div>
+</div>
+
+
+
+#### QCs 
+
+**UMAP plot on QC metrics table**
+
+
+```{r  umap QC, fig.width=10, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+
+umap_plot
+
+```
+For dimesionality reduction (umap plot) the follwing numbers/colums from the table below were used:
+
+ * cutadapt_total_processed
+ * cutadapt_passing_filters
+ * raw
+ * cutadapt
+ * denoisedF
+ * denoisedR
+ * merged
+ * nonchimera
+
+
+<br>
+<hr>
+<!-- Add an empty line for spacing -->
+<br>
+
+```{r  tab2 QC, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+
+TBL2
+
+```
+
+
+**Figures for the estimates of the error rate. Those plots and estimates were prepared by [DADA]("http://benjjneb.github.io/dada2/") R library.**
+
+
+![Read1QVplot](./secondary_analysis/dada2/QC/FW_qual_stats.pdf){height=500px width=49%}
+![Read2QVplot](./secondary_analysis/dada2/QC/RV_qual_stats.pdf){height=500px width=49%}
+
+    
+<br>
+<hr>
+<!-- Add an empty line for spacing -->
+<br>
+
+![Read1](./secondary_analysis/dada2/QC/1_ggsave_1.md.err.png){width=49%}
+![Read2](./secondary_analysis/dada2/QC/1_ggsave_2.md.err.png){width=49%}
+
+The error rates for each possible transition (A=>C, A=>G, ...) are shown. 
+Points are the observed error rates for each consensus quality score.
+The black line shows the estimated error rates after convergence of the machine-learning algorithm.
+The red line shows the error rates expected under the nominal definition of the Q-score.
+Here the estimated error rates (black line) are a good fit to the observed rates (points), 
+and the error rates drop with increased quality as expected. 
+
+
+
+
+
+
+#### ASV table
+
+
+**Full ASV table by with BLAST results.** 
+
+Use button below `Column visibility` for toggle on and off column requared column set.
+
+```{r tab3 ASV, warning=FALSE, message=FALSE, echo=FALSE}
+
+TBL3
+
+```
+
+
+
+
