@@ -7,7 +7,19 @@ library(formattable);
 library(kableExtra);
 library(plotly);
 
-setwd("C:/WORKS/DivPro/reporthtml");
+args = commandArgs(trailingOnly = TRUE)
+
+if(length(args) != 1){
+     stop("!!! Crash !!!\n I need path to the DivPro pipeline output directory. Like this:\n/data/Bioinfo/data-proj-rust/fastq_test")
+}else{
+     sourcefolder = as.character(args[1])
+     sourcefolder <- paste0("/mnt/", sourcefolder);
+}
+
+#setwd("C:/WORKS/DivPro/reporthtml");
+setwd(sourcefolder);
+
+
 mainsummary <-  read.csv("secondary_analysis/overall_summary.tsv", sep="\t");
 dada2       <-  read.csv("secondary_analysis/dada2/DADA2_table.tsv", sep="\t");
 #dadaqcR1    <-  "secondary_analysis/dada2/QC/1_ggsave_1.md.err.png";
@@ -40,5 +52,9 @@ divtable <- data.frame(t(rbind(alphashannon, betasmeanc, uniqasv, totalasv)));
 divtable$alphashannon <- round(divtable$alphashannon, 1);
 divtable$betasmeanc   <- round(divtable$betasmeanc,   1);
 
-
+file.copy("~/divprobatchreport/divpro_2_html.rmd",  "./");
+file.copy("~/divprobatchreport/agrflogo.png",       "./");
 rmarkdown::render("divpro_2_html.rmd", output_file = "divpro_batchreport.html");
+file.remove("divpro_2_html.rmd");
+file.remove("agrflogo.png");
+
