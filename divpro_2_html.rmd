@@ -35,7 +35,8 @@ ternaryAxes <- list(
   caxis = axis("c")
 )
 
-color_scale   <- scales::brewer_pal(palette = "Set1")(nrow(combined_data))
+#color_scale   <- scales::brewer_pal(palette = "Set1")(nrow(combined_data))
+color_scale   <- rainbow(nrow(combined_data))
 color_mapping <- setNames(color_scale, rownames(combined_data))
 
 triplot <- plot_ly(
@@ -53,7 +54,7 @@ triplot <- plot_ly(
   colors = color_mapping             # Specify the color mapping
 ) %>%
   layout(
-#    annotations = label("beta diversity indexes (a,b,c)"),
+    annotations = label("average beta diversity indexes (a,b,c)"),
     ternary = ternaryAxes
   )
 
@@ -75,8 +76,6 @@ TBL1 <- divtable %>%
   kable(escape = F, caption = "Table 1: Sample diversity summaries.") %>%
   kable_styling(c("striped", "hover"), full_width = F, font_size = 14)
 	   
-
-
 
 TBL2 <- datatable(mainsummary,
            caption = 'Table 2: Sequencing and processing summary.',
@@ -144,6 +143,8 @@ umap_plot <- plot_ly(data = map_df, x = ~V1, y = ~V2,
                      text = ~rownames(map_df), 
 					 hoverinfo = "text",
                      mode = "markers",
+#					 color = ~rownames(map_df),  
+					 colors = color_mapping,
                      marker = list(size = mydotsize));
 
 umap_plot <- umap_plot %>%
@@ -163,20 +164,9 @@ umap_plot <- umap_plot %>%
 #### Diversity 
 
 
-<div style="display: flex; justify-content: space-between;">
-<div style="flex-basis: 50;">
-
-```{r  tab1, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
-
-TBL1
-
-```
-
-</div>
-<div style="flex-basis: 48%;">
 
 
-```{r  triangle, fig.width=5, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+```{r  triangle, fig.width=10, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
 
 ###### plain flat picture 
 # plot(betdiv, cex=3, pch=19, col="blue")
@@ -186,8 +176,19 @@ triplot
 
 
 ```
-</div>
-</div>
+
+<br>
+<hr>
+<!-- Add an empty line for spacing -->
+<br>
+
+
+```{r  tab1, echo=FALSE, error=TRUE, message=FALSE, warning=FALSE}
+
+TBL1
+
+```
+
 
 
 
@@ -228,8 +229,8 @@ TBL2
 **Figures for the estimates of the error rate. Those plots and estimates were prepared by [DADA]("http://benjjneb.github.io/dada2/") R library.**
 
 
-![Read1QVplot](./secondary_analysis/dada2/QC/FW_qual_stats.pdf){height=500px width=49%}
-![Read2QVplot](./secondary_analysis/dada2/QC/RV_qual_stats.pdf){height=500px width=49%}
+![Read1QVplot](./secondary_analysis/dada2/QC/FW_qual_stats.pdf){height=500px width=45%}
+![Read2QVplot](./secondary_analysis/dada2/QC/RV_qual_stats.pdf){height=500px width=45%}
 
     
 <br>
@@ -237,8 +238,8 @@ TBL2
 <!-- Add an empty line for spacing -->
 <br>
 
-![Read1](./secondary_analysis/dada2/QC/1_ggsave_1.md.err.png){width=49%}
-![Read2](./secondary_analysis/dada2/QC/1_ggsave_2.md.err.png){width=49%}
+![Read1](./secondary_analysis/dada2/QC/1_ggsave_1.md.err.png){width=48%}
+![Read2](./secondary_analysis/dada2/QC/1_ggsave_2.md.err.png){width=48%}
 
 The error rates for each possible transition (A=>C, A=>G, ...) are shown. 
 Points are the observed error rates for each consensus quality score.
@@ -264,7 +265,4 @@ Use button below `Column visibility` for toggle on and off column requared colum
 TBL3
 
 ```
-
-
-
 
