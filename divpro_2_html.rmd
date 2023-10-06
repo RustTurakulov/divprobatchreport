@@ -143,9 +143,8 @@ umap_plot <- plot_ly(data = map_df, x = ~V1, y = ~V2,
                      text = ~rownames(map_df), 
 					 hoverinfo = "text",
                      mode = "markers",
-#					 color = ~rownames(map_df),  
-					 colors = color_mapping,
-                     marker = list(size = mydotsize));
+                     marker = list(size = mydotsize,
+					               color = color_mapping));
 
 umap_plot <- umap_plot %>%
   layout(
@@ -223,23 +222,27 @@ For dimesionality reduction (umap plot) the follwing numbers/colums from the tab
 
 TBL2
 
+
+## ![Read1QVplot](qvalpdf1){height=500px width=48%}
+## ![Read2QVplot](qvalpdf2){height=500px width=48%}
+
+
 ```
 
 
 **Figures for the estimates of the error rate. Those plots and estimates were prepared by [DADA]("http://benjjneb.github.io/dada2/") R library.**
 
+<iframe src="FW_qual_stats.pdf" height="500" width="48%" frameborder="0"></iframe>
+<iframe src="RV_qual_stats.pdf" height="500" width="48%" frameborder="0"></iframe>
 
-![Read1QVplot](./secondary_analysis/dada2/QC/FW_qual_stats.pdf){height=500px width=45%}
-![Read2QVplot](./secondary_analysis/dada2/QC/RV_qual_stats.pdf){height=500px width=45%}
-
-    
 <br>
 <hr>
 <!-- Add an empty line for spacing -->
 <br>
 
-![Read1](./secondary_analysis/dada2/QC/1_ggsave_1.md.err.png){width=48%}
-![Read2](./secondary_analysis/dada2/QC/1_ggsave_2.md.err.png){width=48%}
+![Read1](1_ggsave_1.md.err.png){width=48%}
+![Read2](1_ggsave_2.md.err.png){width=48%}
+
 
 The error rates for each possible transition (A=>C, A=>G, ...) are shown. 
 Points are the observed error rates for each consensus quality score.
