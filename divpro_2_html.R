@@ -6,6 +6,7 @@ library(DT);
 library(formattable);
 library(kableExtra);
 library(plotly);
+library(crosstalk);
 
 args = commandArgs(trailingOnly = TRUE)
 
@@ -17,7 +18,6 @@ if(length(args) != 2){
      sourcefolder <- paste0("/mnt/", sourcefolder);
      destinfolder <- as.character(args[2]);
      destinfolder <- paste0("/mnt/", destinfolder);
-
 }
 
 setwd(sourcefolder);
